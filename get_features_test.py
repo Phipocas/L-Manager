@@ -34,62 +34,61 @@ def extract_features(clip_dict, label_dict, path, num_files):
     spectrum = E.Spectrum()
     mfcc=E.MFCC()
     # pool=E.essentia.Pool()
-
-    # Computes effective duration of clip and time index for max amplitude
-    # effective_duration = E.EffectiveDuration(sampleRate=44100, thresholdRatio=0.4)
     
     mfcc_total = np.array([[]])
-    frame_cnt = 0
+    snd_cnt = 0
     test_list = list(clip_dict.keys())
 
     for filename in os.listdir(path)[:num_files]:
         filename = filename.split(".")[0]
         if filename in clip_dict.keys():
-            print(f"Processing sound number {frame_cnt}, with id {filename}")
+            print(f"Processing sound number {snd_cnt}, with id {filename}")
             
-            # Extract MFCCs
+            # Loads Audio
             loader = E.essentia.standard.MonoLoader(filename=os.path.join(path, filename + ".wav"), sampleRate=44100)
             audio = loader()
-            # dur = effective_duration(audio)
-            # dur_samples = int(44100*dur)
-            # try:
-            #     max_i = audio.tolist().index(np.max(np.abs(audio)))
-            # except Exception:
-            #     max_i = audio.tolist().index(-np.max(np.abs(audio)))
 
-            for frame in E.FrameGenerator(audio, frameSize=1024, hopSize=512, startFromZero=True):
-                spec = spectrum(w(frame))
-                mfcc_bands, mfcc_coeffs = mfcc(spec)
+            # Computes sound energy and threshold
+            array_energy = np.square(np.abs(audio))
+            max_energy = np.mean(array_energy)
+            threshold = 0.3 * max_energy
 
-                data["mapping"].append(clip_dict[filename])
-                data["features"].append(mfcc_coeffs.tolist())
-                data["labels"].append(float(label_dict[clip_dict[filename]]))
+            for frame in E.FrameGenerator(audio, frameSize=1024, hopSize=250, startFromZero=True):
+                
+                frame_energy = np.square(np.abs(frame))
+                frame_mean_energy = np.mean(frame_energy)
+                if frame_mean_energy >= threshold:
+                    spec = spectrum(w(frame))
+                    mfcc_bands, mfcc_coeffs = mfcc(spec)
 
-                frame_cnt += 1
+                    data["mapping"].append(clip_dict[filename])
+                    data["features"].append(mfcc_coeffs.tolist())
+                    data["labels"].append(float(label_dict[clip_dict[filename]]))
+
+            snd_cnt += 1
 
     return data
 
 def main():
     # Get clip mapping -> clip_id:label
-    csv_path = "/Users/marcoferreira/Now/Programming/Sound Classifier/FSD50K/FSD50K.ground_truth/dev.csv"
+    csv_path = "../FSD50K_Data/FSD50K.ground_truth/dev.csv"
     clip_map =  get_labels(path=csv_path)
 
     # Get label mapping -> label_name:label_index
     label_map={}
-    csv_path = "/Users/marcoferreira/Now/Programming/Sound Classifier/FSD50K/FSD50K.ground_truth/vocabulary.csv"
+    csv_path = "../FSD50K_Data/FSD50K.ground_truth/vocabulary.csv"
     with open(csv_path, "r") as csv_file:
         csv_data = csv.reader(csv_file, delimiter = ",")
         for row in csv_data:
             label_map[row[1]] = row[0]
     
     # Extract features
-    audio_path = "/Users/marcoferreira/Now/Programming/Sound Classifier/FSD50K/FSD50K.dev_audio"
+    audio_path = "../FSD50K_Data/FSD50K.dev_audio"
     data = extract_features(clip_dict = clip_map, label_dict = label_map, path = audio_path, num_files = 10)
     
     # Create json file with input data
-    out_dir = "/Users/marcoferreira/Now/Programming/Sound Classifier/FSD50K/Data"
+    out_dir = "Data"
     json.dump(data, open(out_dir + "/data.json", 'w'), indent=4)
 
 if __name__ == "__main__":
-        
     main()

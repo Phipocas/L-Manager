@@ -63,7 +63,6 @@ def train_model(data, epochs):
     history_data["epochs"] = epochs
     json.dump(history_data, open(history_path + f"_{datetime.datetime.now().day}{datetime.datetime.now().month}_{datetime.datetime.now().hour}{datetime.datetime.now().minute}", "w"), indent=4)
 
-
     return history
 
 def plot_history(history):
@@ -86,8 +85,8 @@ def plot_history(history):
 
     plt.show()
 
-if __name__ == "__main__":
-    
+
+def main():
     # Load Data
     with open("Data/data_norm.json", "r") as json_file:
         data_norm = json.load(json_file)
@@ -97,3 +96,7 @@ if __name__ == "__main__":
 
     #plot accuracy and error over epochs
     plot_history(history)
+
+
+if __name__ == "__main__":
+    main()
