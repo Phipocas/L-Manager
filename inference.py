@@ -15,8 +15,8 @@ def extract_features(audio):
 
     # Computes sound energy and threshold
     array_energy = np.square(np.abs(audio))
-    max_energy = np.mean(array_energy)
-    threshold = 0.3 * max_energy
+    mean_energy = np.mean(array_energy)
+    threshold = 0.2 * mean_energy
 
     for frame in E.FrameGenerator(audio, frameSize=1024, hopSize=hop, startFromZero=True):
         frame_energy = np.square(np.abs(frame))
